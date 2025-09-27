@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.net.ServerSocket;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -21,18 +22,28 @@ public class InstancesController {
     final String name = "hello-" + UUID.randomUUID().toString().substring(0, 6);
 
     try {
-      // Create nginx on :80 and expose NodePort 80->80
-      runOrThrow(new String[]{"kubectl","create","deployment",name,"--image=nginx:1.25-alpine","--port=80","-n",ns}, 10);
-      runOrThrow(new String[]{"kubectl","expose","deployment",name,"--type=NodePort","--port=80","--target-port=80","-n",ns}, 10);
+      // 1) Create a super-simple app (nginx) and expose it
+      runOrThrow(new String[]{"kubectl","create","deployment",name,
+          "--image=nginx:1.25-alpine","--port=80","-n",ns}, 20);
 
-      // Best-effort rollout wait (bounded)
-      try { runOrThrow(new String[]{"kubectl","rollout","status","deploy/"+name,"-n",ns,"--timeout=30s"}, 35); } catch (Exception ignored) {}
+      runOrThrow(new String[]{"kubectl","expose","deployment",name,
+          "--type=NodePort","--port=80","--target-port=80","-n",ns}, 20);
 
-      // Always compute URL via minikube IP + NodePort (no 'minikube service' hang)
-      String nodePort = runAndCapture(new String[]{"kubectl","get","svc",name,"-n",ns,"-o","jsonpath={.spec.ports[0].nodePort}"}, 5).trim();
-      String ip = runAndCapture(new String[]{"minikube","ip"}, 3).trim();
-      String url = "http://" + ip + ":" + nodePort;
+      // 2) Wait briefly for the pod to become Ready (bounded)
+      try {
+        runOrThrow(new String[]{"kubectl","rollout","status","deploy/"+name,"-n",ns,"--timeout=30s"}, 35);
+      } catch (Exception ignored) {}
 
+      // 3) Pick a free local port and start a port-forward to the Service
+      int localPort = findFreePort();
+      new ProcessBuilder("kubectl","port-forward","svc/"+name, localPort + ":80","-n",ns,"--address","127.0.0.1")
+          .redirectErrorStream(true)
+          .start(); // let it run in background for demo
+
+      // 4) Give the forward a moment to bind
+      Thread.sleep(900);
+
+      String url = "http://127.0.0.1:" + localPort;
       return ResponseEntity.ok(Map.of("endpoint", url));
 
     } catch (Exception e) {
@@ -41,33 +52,21 @@ public class InstancesController {
     }
   }
 
-  // ---- helpers with hard timeouts ----
-
-  private static void runOrThrow(String[] cmd, int timeoutSeconds) throws Exception {
+  // --- helpers ---
+  private static void runOrThrow(String[] cmd, int timeoutSec) throws Exception {
     Process p = new ProcessBuilder(cmd).redirectErrorStream(true).start();
     try (BufferedReader r = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
-      while (r.readLine() != null) { /* consume */ }
+      while (r.readLine() != null) { /* drain */ }
     }
-    boolean finished = p.waitFor(timeoutSeconds, TimeUnit.SECONDS);
-    if (!finished) {
-      p.destroyForcibly();
-      throw new RuntimeException(String.join(" ", cmd) + " timed out");
-    }
+    boolean finished = p.waitFor(timeoutSec, TimeUnit.SECONDS);
+    if (!finished) { p.destroyForcibly(); throw new RuntimeException(String.join(" ", cmd) + " timed out"); }
     if (p.exitValue() != 0) throw new RuntimeException(String.join(" ", cmd) + " failed");
   }
 
-  private static String runAndCapture(String[] cmd, int timeoutSeconds) throws Exception {
-    Process p = new ProcessBuilder(cmd).redirectErrorStream(true).start();
-    StringBuilder sb = new StringBuilder();
-    try (BufferedReader r = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
-      String line; while ((line = r.readLine()) != null) sb.append(line).append('\n');
+  private static int findFreePort() throws Exception {
+    try (ServerSocket s = new ServerSocket(0)) {
+      s.setReuseAddress(true);
+      return s.getLocalPort();
     }
-    boolean finished = p.waitFor(timeoutSeconds, TimeUnit.SECONDS);
-    if (!finished) {
-      p.destroyForcibly();
-      throw new RuntimeException(String.join(" ", cmd) + " timed out");
-    }
-    if (p.exitValue() != 0) throw new RuntimeException(String.join(" ", cmd) + " failed");
-    return sb.toString();
   }
 }
