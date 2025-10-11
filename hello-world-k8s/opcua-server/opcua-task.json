@@ -1,0 +1,23 @@
+{
+    "family": "opcua-demo-task",
+    "networkMode": "awsvpc",
+    "executionRoleArn": "arn:aws:iam::770404292192:role/ecsTaskExecutionRole",
+    "containerDefinitions": [
+      {
+        "name": "opcua-demo",
+        "image": "770404292192.dkr.ecr.us-east-1.amazonaws.com/opcua-demo:v1",
+        "portMappings": [
+          {
+            "containerPort": 4840,
+            "hostPort": 4840,
+            "protocol": "tcp"
+          }
+        ],
+        "essential": true
+      }
+    ],
+    "requiresCompatibilities": ["FARGATE"],
+    "cpu": "256",
+    "memory": "512"
+  }
+  
