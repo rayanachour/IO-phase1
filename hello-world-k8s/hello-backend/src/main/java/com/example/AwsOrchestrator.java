@@ -118,24 +118,13 @@ public class AwsOrchestrator {
     }
 
     public InstanceResponse createInstance() {
-        // 1) Reserve port + TG + listener
         PortSlot slot = ensureNextFreePortSlot();
         String endpoint = "opc.tcp://" + elb.getNlbDns() + ":" + slot.port;
-
-        // 2) Prevent UNUSED: restrict ECS placement to NLB-enabled subnets
         String lbArn = loadBalancerArnByDns(elb.getNlbDns());
         List<String> placementSubnets = filterSubnetsToNlb(lbArn, aws.getSubnets());
-
-        // 3) Launch task
         String taskArn = runTaskWithEnv(endpoint, placementSubnets);
-
-        // 4) Wait for ECS to report RUNNING (containers started)
         waitForTaskRunning(taskArn, Math.max(orch.getWaitForRunningSeconds(), 60));
-
-        // 5) Get private IP from ENI
         String ip = waitForPrivateIp(taskArn, orch.getWaitForRunningSeconds());
-
-        // 6) Register target & wait until Healthy (clear logs if not)
         registerIp(slot.targetGroupArn, ip, orch.getContainerPort());
         waitUntilHealthy(slot.targetGroupArn, ip, orch.getHealthWaitSeconds());
 
@@ -148,8 +137,6 @@ public class AwsOrchestrator {
                 ip
         );
     }
-
-    // ---------- helpers ----------
 
     private static class PortSlot { int port; String targetGroupArn; PortSlot(int p,String a){port=p;targetGroupArn=a;} }
 
@@ -210,7 +197,6 @@ public class AwsOrchestrator {
             .targetType(TargetTypeEnum.IP)
             .healthCheckProtocol(ProtocolEnum.TCP)
             .healthCheckPort("traffic-port")
-            // ↓↓↓ Make health check flip fast
             .healthCheckIntervalSeconds(10)
             .healthCheckTimeoutSeconds(6)
             .healthyThresholdCount(2)
@@ -237,7 +223,6 @@ public class AwsOrchestrator {
                 .build());
     }
 
-    // --- NLB/ECS subnet alignment (prevents UNUSED targets) ---
 
     private Set<String> getNlbSubnetIdsByArn(String lbArn) {
         var lb = elbv2.describeLoadBalancers(r -> r.loadBalancerArns(lbArn))
