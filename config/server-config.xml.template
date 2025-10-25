@@ -1,0 +1,6 @@
+<OpcUaServer>
+  <Endpoints>
+    <Endpoint url="__ENDPOINT_URL__" transportProfile="opc.tcp"/>
+  </Endpoints>
+  <!-- rest -->
+</OpcUaServer>

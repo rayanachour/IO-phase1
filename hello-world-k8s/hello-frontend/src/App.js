@@ -20,8 +20,6 @@ function App() {
     }
   };
 
-  const isOpcUa = endpoint.startsWith('opc.tcp://');
-
   return (
     <div style={{ textAlign: 'center', marginTop: '50px', fontFamily: 'system-ui' }}>
       <button onClick={createInstance} disabled={loading}>
@@ -30,14 +28,7 @@ function App() {
 
       {endpoint && (
         <p style={{ marginTop: 20 }}>
-          endpoint:{' '}
-          {isOpcUa ? (
-            <code>{endpoint}</code>
-          ) : (
-            <a href={endpoint} target="_blank" rel="noreferrer">
-              {endpoint}
-            </a>
-          )}
+          <strong>Endpoint:</strong> <code>{endpoint}</code>
         </p>
       )}
 

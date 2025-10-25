@@ -1,2 +1,8 @@
+com/example/AwsOrchestrator$PortSlot.class
+com/example/ElbProps.class
 com/example/App.class
+com/example/OrchProps.class
+com/example/AwsOrchestrator.class
 com/example/InstancesController.class
+com/example/AwsProps.class
+com/example/InstanceResponse.class

@@ -1,0 +1,15 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    
+    {
+      "name": "Run Backend (Build + Run)",
+      "type": "java",
+      "request": "launch",
+      "mainClass": "com.example.App",
+      "cwd": "${workspaceFolder}/hello-backend",
+      "preLaunchTask": "Maven: Clean & Package",
+      "console": "integratedTerminal"
+    }
+  ]
+}

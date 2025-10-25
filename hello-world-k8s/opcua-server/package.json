@@ -1,7 +1,0 @@
-{
-    "name": "opcua-demo",
-    "version": "1.0.0",
-    "private": true,
-    "dependencies": { "node-opcua": "^2.119.0" }
-  }
-  

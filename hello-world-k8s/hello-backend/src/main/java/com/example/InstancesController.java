@@ -1,24 +1,25 @@
 package com.example;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import java.util.Map;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
+@CrossOrigin(origins = "http://localhost:3000")
 public class InstancesController {
+    private final AwsOrchestrator orchestrator;
 
-  // put your NLB DNS here (or override with OPCUA_ENDPOINT env var)
-  private static final String DEFAULT_ENDPOINT =
-      "opc.tcp://opcua-nlb-103856889438b10c.elb.us-east-1.amazonaws.com:4840";
+    public InstancesController(AwsOrchestrator orchestrator) {
+        this.orchestrator = orchestrator;
+    }
 
-  @CrossOrigin(origins = "http://localhost:3000")
-  @PostMapping("/instances")
-  public ResponseEntity<?> createInstance() {
-    // If you want to swap endpoints without code changes:
-    String endpoint = System.getenv().getOrDefault("OPCUA_ENDPOINT", DEFAULT_ENDPOINT);
-    return ResponseEntity.ok(Map.of("endpoint", endpoint));
-  }
+    @PostMapping("/instances")
+    public ResponseEntity<InstanceResponse> create() {
+        return ResponseEntity.ok(orchestrator.createInstance());
+    }
+
+    @DeleteMapping("/{port}")
+    public ResponseEntity<String> deleteInstance(@PathVariable int port) {
+        orchestrator.deleteInstance(port);
+        return ResponseEntity.ok("Deleted instance on port " + port);
+    }
 }

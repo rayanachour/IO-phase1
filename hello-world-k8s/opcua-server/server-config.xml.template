@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OpcUaServer>
+  <Network>
+    <BindAddress>0.0.0.0</BindAddress>
+    <BindPort>__BIND_PORT__</BindPort>  <!-- container listen port -->
+  </Network>
+
+  <Endpoints>
+    <!-- This is what clients will see (NLB DNS + dynamic external port) -->
+    <Endpoint url="__ENDPOINT_URL__" transportProfile="opc.tcp"/>
+  </Endpoints>
+
+  <!-- rest of your config -->
+</OpcUaServer>

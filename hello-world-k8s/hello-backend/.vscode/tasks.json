@@ -1,0 +1,19 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Maven: Clean & Package",
+      "type": "shell",
+      "command": "sh",
+      "args": [
+        "-c",
+        "if [ -x ./mvnw ]; then ./mvnw -q clean package; else mvn -q clean package; fi"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/hello-backend"
+      },
+      "group": "build",
+      "problemMatcher": []
+    }
+  ]
+}
