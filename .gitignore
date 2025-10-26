@@ -1,1 +1,17 @@
+# Sensitive files
 hello-world-k8s/aws/rayan_accessKeys.csv
+
+# Java
+target/
+*.log
+
+# Node / frontend
+node_modules/
+dist/
+build/
+.next/
+
+# OS / IDE
+.DS_Store
+.vscode/
+.idea/
